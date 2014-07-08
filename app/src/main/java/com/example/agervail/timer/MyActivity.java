@@ -292,7 +292,7 @@ public class MyActivity extends Activity {
         else if(parts.length == 3){
             seconds = Integer.parseInt(parts[2]);
             minutes = Integer.parseInt(parts[1]);
-            hours = Integer.parseInt(parts[1]);
+            hours = Integer.parseInt(parts[0]);
         }
 
         return seconds + (minutes*60) + (hours*3600);

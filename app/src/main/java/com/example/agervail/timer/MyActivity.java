@@ -53,9 +53,7 @@ public class MyActivity extends Activity {
 
     // The indices for the projection array above.
     private static final int PROJECTION_ID_INDEX = 0;
-    private static final int PROJECTION_ACCOUNT_NAME_INDEX = 1;
     private static final int PROJECTION_DISPLAY_NAME_INDEX = 2;
-    private static final int PROJECTION_OWNER_ACCOUNT_INDEX = 3;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -125,20 +123,74 @@ public class MyActivity extends Activity {
         alert.show();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        long tws = chrono.getBase() - SystemClock.elapsedRealtime();
+        long timeAtPause = SystemClock.elapsedRealtime();
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putLong("timePause",tws);
+        editor.putLong("timeAtPause",timeAtPause);
+        editor.commit();
+        Log.i(DEBUG_TAG, "Pause : " + tws);
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        long timePause = settings.getLong("timePause", -1);
+        long timeAtPause = settings.getLong("timeAtPause", -1);
+
+        if(timePause != -1) {
+            chrono.setBase(SystemClock.elapsedRealtime() + timePause - (SystemClock.elapsedRealtime() - timeAtPause));
+        }
+        Log.i(DEBUG_TAG, "Pause : " + timePause);
+        Log.i(DEBUG_TAG, "temps " + (SystemClock.elapsedRealtime() - timeAtPause));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i(DEBUG_TAG, "stop : ");
+    }
+
+    public void resetButton(View view){
+        chrono.setBase(SystemClock.elapsedRealtime());
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        long tws = chrono.getBase() - SystemClock.elapsedRealtime();
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putLong("timePause",tws);
+        editor.putLong("timeAtPause",-1);
+        editor.commit();
+        Log.i(DEBUG_TAG, "Reset");
+    }
+
     public void onToggleClicked(View view) {
         // Is the toggle on?
         boolean on = ((ToggleButton) view).isChecked();
-
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        long timePause = settings.getLong("timePause", -1);
+        long timeAtPause = settings.getLong("timeAtPause", -1);
         if (on) {
-            if(timeWhenStopped == -1){
+            if(timePause == -1){
                 chrono.setBase(SystemClock.elapsedRealtime());
             }else{
-                chrono.setBase(SystemClock.elapsedRealtime() + timeWhenStopped);
+                if(timeAtPause != -1) {
+                    chrono.setBase(SystemClock.elapsedRealtime() + timePause - (SystemClock.elapsedRealtime() - timeAtPause));
+                } else{
+                    chrono.setBase(SystemClock.elapsedRealtime() + timePause);
+                }
             }
             chrono.start();
         } else {
-            timeWhenStopped = chrono.getBase() - SystemClock.elapsedRealtime();
+            long tws = chrono.getBase() - SystemClock.elapsedRealtime();
             chrono.stop();
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putLong("timePause",tws);
+            editor.commit();
         }
     }
 
